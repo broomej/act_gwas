@@ -1,0 +1,19 @@
+---
+title: "Variant QC Report: ACT1 & and ACT3 NHW Genotyped SNPs"
+author:
+- name: Jai Broome
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+---
+
+```{r setup, message = FALSE}
+library(dplyr)
+library(ggplot2)
+input <- snakemake@input
+output <- snakemake@output
+params <- snakemake@params
+```
+
+```{r load-data}
+varmet <- readRDS(input$var_qc)
+print(head(varmet))
+```

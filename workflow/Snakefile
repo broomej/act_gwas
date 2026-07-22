@@ -1,0 +1,93 @@
+container: config.get("genetics_tools_image", "docker://broome/genetics-tools:latest")
+from snakemake.utils import min_version
+min_version("7.0")
+
+import os
+import sys
+envvars: "DATA_DIR", "PROJECT_ROOT_DIR"
+DATA_DIR = os.environ["DATA_DIR"]
+PROJECT_ROOT_DIR = os.environ["PROJECT_ROOT_DIR"]
+
+# Check prerequisites
+PREREQUISITES = [
+    f"{PROJECT_ROOT_DIR}/ACT/1_data_prep/results/act_np_imputed.bed",
+    f"{PROJECT_ROOT_DIR}/ACT/2_qc_pcs_grm/results/2_relatedness_ancestry/pcair_b.rds"
+]
+for f in PREREQUISITES:
+    if not os.path.exists(f):
+        print(f"ERROR: Prerequisite missing: {f}")
+        print("Please run ACT/1_data_prep and ACT/2_qc_pcs_grm first.")
+        sys.exit(1)
+
+COHORTS=["ACT1", "ACT3_AA", "ACT3_Asian", "ACT3_Hispanic", "ACT3_NHW"]
+CHROMS_MINUS_X = [str(i) for i in range(1, 23)]
+CHROMOSOMES = CHROMS_MINUS_X + ["X"]
+
+module np_gwas_module:
+    snakefile: github("broomej/np-gwas-module", path="Snakefile", tag="v1.0.0")
+    config: config
+
+rule all:
+    input:
+        assoc_linear=expand("results/gwas_id_mapped/chr{chromosome}.assoc.linear", chromosome=CHROMS_MINUS_X),
+        adjusted=expand("results/gwas_id_mapped/chr{chromosome}.assoc.linear.adjusted", chromosome=CHROMS_MINUS_X),
+        log=expand("results/gwas/chr{chromosome}.log", chromosome=CHROMS_MINUS_X),
+        freq=expand("results/freq_id_mapped/chr{chromosome}.frq", chromosome=CHROMS_MINUS_X)
+
+use rule gwas from np_gwas_module as gwas_np with:
+    input:
+        bed=f"{PROJECT_ROOT_DIR}/ACT/1_data_prep/results/act_np_imputed.bed",
+        bim=f"{PROJECT_ROOT_DIR}/ACT/1_data_prep/results/act_np_imputed.bim",
+        fam=config["fam"],
+        covar=config["covar_file"],
+
+rule make_pheno_fam_covar:
+    input:
+        pcair=f"{PROJECT_ROOT_DIR}/ACT/2_qc_pcs_grm/results/2_relatedness_ancestry/pcair_b.rds",
+        bps=f"{DATA_DIR}/act_bps.txt",
+        fam=f"{PROJECT_ROOT_DIR}/ACT/1_data_prep/results/act_np_imputed.fam",
+        xwalk=f"{DATA_DIR}/ACT_ID_xwalk.csv",
+        sampmet=f"{PROJECT_ROOT_DIR}/ACT/2_qc_pcs_grm/results/sample_metrics.rds",
+    output:
+        covar_file=config["covar_file"],
+        fam=config["fam"],
+    params:
+        pheno_name="act_bps",
+        covar_names=config["covar_names"],
+    script: "scripts/make_pheno.R"
+
+rule plink_freq:
+    input:
+        bed=f"{PROJECT_ROOT_DIR}/ACT/1_data_prep/results/act_np_imputed.bed",
+        bim=f"{PROJECT_ROOT_DIR}/ACT/1_data_prep/results/act_np_imputed.bim",
+        fam=config["fam"],
+    output:
+        "results/freq/chr{chromosome}.frq"
+    params:
+        chromosome=lambda wildcards: wildcards.chromosome,
+        plink_exe=config["plink_exe"],
+    shell:
+        """
+        {params.plink_exe} --freq \
+            --bed {input.bed} \
+            --bim {input.bim} \
+            --fam {input.fam} \
+            --chr {params.chromosome} \
+            --out temp/freq/chr{params.chromosome}
+        mv temp/freq/chr{params.chromosome}.frq {output}
+        """
+
+rule change_ids:
+    input: "results/gwas/chr{chromosome}.assoc.linear",
+    output: "results/gwas_id_mapped/chr{chromosome}.assoc.linear",
+    script: "scripts/change_ids.R"
+
+rule change_ids_adjust:
+    input: "results/gwas/chr{chromosome}.assoc.linear.adjusted",
+    output: "results/gwas_id_mapped/chr{chromosome}.assoc.linear.adjusted",
+    script: "scripts/change_ids.R"
+
+rule change_freq_ids:
+    input: "results/freq/chr{chromosome}.frq",
+    output: "results/freq_id_mapped/chr{chromosome}.frq",
+    script: "scripts/change_ids.R"
