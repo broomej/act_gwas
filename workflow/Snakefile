@@ -1,5 +1,6 @@
 module np_gwas_module:
-    snakefile: github("broomej/np-gwas-module", path="Snakefile", tag="v1.0.0")
+    #snakefile: github("broomej/np-gwas-module", path="Snakefile", tag="v1.0.0")
+    snakefile: "/home/jb/analysis/np-gwas-module/Snakefile"
     config: config
 
 OUTDIR = config["outdir"]["act"]["gwas"]
@@ -12,17 +13,16 @@ PLINK_PFX = f"{CONVERT_VCF_OUTDIR}/results/act_imputed"
 PCAIR_B = f"{RELATEDNESS_OUTDIR}/results/2_relatedness_ancestry/pcair_b.rds"
 SAMPLE_METRICS = f"{QC_OUTDIR}/results/sample_metrics.rds"
 
-CHROMOSOMES = config["CHROMOSOMES"]
-CHROMS_MINUS_X = [c for c in CHROMOSOMES if c != "X"]
-
-use rule gwas from np_gwas_module as gwas_np with:
+GWAS_OUT_PFX=f"{OUTDIR}/results/act_bps"
+rule all:
     input:
-        bed=f"{PLINK_PFX}.bed",
-        bim=f"{PLINK_PFX}.bim",
-        fam=config["fam"],
-        covar=config["covar_file"],
+        assoc_linear=f"{GWAS_OUT_PFX}.assoc.linear",
+        adjusted=f"{GWAS_OUT_PFX}.assoc.linear.adjusted",
 
+FAM_FILE=f"{OUTDIR}/results/formatted.fam"
+COVAR_FILE=f"{OUTDIR}/results/formatted.covar"
 rule make_pheno_fam_covar:
+    container: config["images"]["shiny_verse"]
     input:
         pcair=PCAIR_B,
         bps="/container/act/act_bps.txt",
@@ -30,38 +30,50 @@ rule make_pheno_fam_covar:
         xwalk="/container/act/ACT_ID_xwalk.csv",
         sampmet=SAMPLE_METRICS,
     output:
-        covar_file=config["covar_file"],
-        fam=config["fam"],
+        covar_file=COVAR_FILE,
+        fam=FAM_FILE
     log: f"{OUTDIR}/logs/make_pheno_fam_covar.log"
     params:
-        pheno_name="act_bps",
-        covar_names=config["covar_names"],
+        pheno_name=config['gwas']['pheno_name'],
+        covar_names=config['gwas']['covar_names'],
     script: "scripts/make_pheno.R"
 
+use rule gwas from np_gwas_module as gwas_np with:
+    input:
+        bed=f"{PLINK_PFX}.bed",
+        bim=f"{PLINK_PFX}.bim",
+        fam=f"{PLINK_PFX}.fam",
+        covar=COVAR_FILE,
+    output:
+        assoc_linear=f"{GWAS_OUT_PFX}.assoc.linear",
+        adjusted=f"{GWAS_OUT_PFX}.assoc.linear.adjusted",
+    log: f"{GWAS_OUT_PFX}.log" 
+    params:
+        gwas_output_pfx=GWAS_OUT_PFX
+        
+
+FREQ_PFX=f"{OUTDIR}/temp/gwas_prep"
 rule plink_freq:
     container: config["images"]["plink"]
     input:
         bed=f"{PLINK_PFX}.bed",
         bim=f"{PLINK_PFX}.bim",
-        fam=config["fam"],
+        fam=FAM_FILE,
     output:
-        temp(f"{OUTDIR}/temp/freq/chr{{chromosome}}.frq"),
-    log: f"{OUTDIR}/logs/plink_freq/{{chromosome}}.log"
+        temp(f"{FREQ_PFX}.frq"),
+    log: f"{OUTDIR}/logs/plink_freq.log"
     params:
-        chromosome=lambda wildcards: wildcards.chromosome,
+        out_pfx=FREQ_PFX
     shell:
         """
         outdir=$(dirname {output})
         mkdir -p $outdir
-        pfx=$outdir/chr{wildcards.chromosome}
         plink --freq \
             --bed {input.bed} \
             --bim {input.bim} \
             --fam {input.fam} \
-            --chr {params.chromosome} \
-            --out $pfx
-        mv $pfx.frq {output}
-        mv $pfx.log {log}
+            --out {params.out_pfx}
+        mv {params.out_pfx}.log {log}
         """
 
 rule change_ids:
