@@ -42,7 +42,7 @@ use rule gwas from np_gwas_module as gwas_np with:
     input:
         bed=f"{PLINK_PFX}.bed",
         bim=f"{PLINK_PFX}.bim",
-        fam=f"{PLINK_PFX}.fam",
+        fam=FAM_FILE,
         covar=COVAR_FILE,
     output:
         assoc_linear=f"{GWAS_OUT_PFX}.assoc.linear",
