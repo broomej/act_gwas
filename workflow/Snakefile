@@ -39,6 +39,7 @@ rule make_pheno_fam_covar:
     script: "scripts/make_pheno.R"
 
 use rule gwas from np_gwas_module as gwas_np with:
+    container: config["images"]["plink"]
     input:
         bed=f"{PLINK_PFX}.bed",
         bim=f"{PLINK_PFX}.bim",
@@ -52,7 +53,7 @@ use rule gwas from np_gwas_module as gwas_np with:
         gwas_output_pfx=GWAS_OUT_PFX
         
 
-FREQ_PFX=f"{OUTDIR}/temp/gwas_prep"
+FREQ_PFX=f"{OUTDIR}/temp/gwas"
 rule plink_freq:
     container: config["images"]["plink"]
     input:
@@ -63,7 +64,7 @@ rule plink_freq:
         temp(f"{FREQ_PFX}.frq"),
     log: f"{OUTDIR}/logs/plink_freq.log"
     params:
-        out_pfx=FREQ_PFX
+        out_pfx=FREQ_PFX,
     shell:
         """
         outdir=$(dirname {output})
