@@ -16,8 +16,9 @@ SAMPLE_METRICS = f"{QC_OUTDIR}/results/sample_metrics.rds"
 GWAS_OUT_PFX=f"{OUTDIR}/results/act_bps"
 rule all:
     input:
-        assoc_linear=f"{GWAS_OUT_PFX}.assoc.linear",
-        adjusted=f"{GWAS_OUT_PFX}.assoc.linear.adjusted",
+        f"{OUTDIR}/results/gwas_id_mapped.assoc.linear",
+        f"{OUTDIR}/results/gwas_id_mapped.assoc.linear.adjusted",
+        f"{OUTDIR}/results/id_mapped.frq",
 
 FAM_FILE=f"{OUTDIR}/results/formatted.fam"
 COVAR_FILE=f"{OUTDIR}/results/formatted.covar"
@@ -78,19 +79,19 @@ rule plink_freq:
         """
 
 rule change_ids:
-    input: f"{OUTDIR}/temp/gwas/chr{{chromosome}}.assoc.linear",
-    output: f"{OUTDIR}/results/gwas_id_mapped/chr{{chromosome}}.assoc.linear",
-    log: f"{OUTDIR}/logs/change_ids/{{chromosome}}.log"
+    input: f"{GWAS_OUT_PFX}.assoc.linear",
+    output: f"{OUTDIR}/results/gwas_id_mapped.assoc.linear",
+    log: f"{OUTDIR}/logs/change_ids.log"
     script: "scripts/change_ids.R"
 
 rule change_ids_adjust:
-    input: f"{OUTDIR}/temp/gwas/chr{{chromosome}}.assoc.linear.adjusted",
-    output: f"{OUTDIR}/results/gwas_id_mapped/chr{{chromosome}}.assoc.linear.adjusted",
-    log: f"{OUTDIR}/logs/change_ids_adjust/{{chromosome}}.log"
+    input: f"{GWAS_OUT_PFX}.assoc.linear.adjusted",
+    output: f"{OUTDIR}/results/gwas_id_mapped.assoc.linear.adjusted",
+    log: f"{OUTDIR}/logs/change_ids_adjust.log"
     script: "scripts/change_ids.R"
 
 rule change_freq_ids:
-    input: f"{OUTDIR}/temp/freq/chr{{chromosome}}.frq",
-    output: f"{OUTDIR}/results/freq_id_mapped/chr{{chromosome}}.frq",
-    log: f"{OUTDIR}/logs/change_freq_ids/{{chromosome}}.log"
+    input: f"{FREQ_PFX}.frq",
+    output: f"{OUTDIR}/results/id_mapped.frq",
+    log: f"{OUTDIR}/logs/change_freq_ids.log"
     script: "scripts/change_ids.R"
