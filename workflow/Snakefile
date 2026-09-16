@@ -3,10 +3,10 @@ module np_gwas_module:
     snakefile: "/home/jb/analysis/np-gwas-module/Snakefile"
     config: config
 
-OUTDIR = config["outdir"]["act"]["gwas"]
-CONVERT_VCF_OUTDIR = config["outdir"]["act"]["convert_vcf"]
-RELATEDNESS_OUTDIR = config["outdir"]["act"]["relatedness_ancestry"]
-QC_OUTDIR = config["outdir"]["act"]["sample_variant_qc"]
+OUTDIR = config["act"]["outdir"]["gwas"]
+CONVERT_VCF_OUTDIR = config["act"]["outdir"]["convert_vcf"]
+RELATEDNESS_OUTDIR = config["act"]["outdir"]["relatedness_ancestry"]
+QC_OUTDIR = config["act"]["outdir"]["sample_variant_qc"]
 
 # Upstream inter-module inputs
 PLINK_PFX = f"{CONVERT_VCF_OUTDIR}/results/act_imputed"
