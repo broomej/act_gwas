@@ -35,8 +35,8 @@ rule make_pheno_fam_covar:
         fam=FAM_FILE
     log: f"{OUTDIR}/logs/make_pheno_fam_covar.log"
     params:
-        pheno_name=config['gwas']['pheno_name'],
-        covar_names=config['gwas']['covar_names'],
+        pheno_name=config['pheno_name'],
+        covar_names=config['covar_names'],
     script: "scripts/make_pheno.R"
 
 use rule gwas from np_gwas_module as gwas_np with:
