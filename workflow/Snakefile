@@ -11,7 +11,7 @@ QC_OUTDIR = config["act"]["outdir"]["sample_variant_qc"]
 # Upstream inter-module inputs
 PLINK_PFX = f"{CONVERT_VCF_OUTDIR}/results/act_imputed"
 PCAIR_B = f"{RELATEDNESS_OUTDIR}/results/2_relatedness_ancestry/pcair_b.rds"
-SAMPLE_METRICS = f"{QC_OUTDIR}/results/sample_metrics.rds"
+SAMPLE_METRICS = f"{QC_OUTDIR}/results/sample_metrics_imputed.rds"
 
 GWAS_OUT_PFX=f"{OUTDIR}/results/act_bps"
 rule all:
