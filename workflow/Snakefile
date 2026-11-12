@@ -20,6 +20,15 @@ rule all:
         f"{OUTDIR}/results/gwas_id_mapped.assoc.linear.adjusted",
         f"{OUTDIR}/results/id_mapped.frq",
 
+VAR_EXCL=f"{OUTDIR}/results/gwas_snp_exclude.txt"
+rule format_var_ids:
+    input:
+        var_include=f"{QC_OUTDIR}/results/imputed/variants_pass_qc_nhw.rds",
+        gds=f"{CONVERT_VCF_OUTDIR}/results/act_imputed.gds",
+    output: VAR_EXCL
+    log: f"{OUTDIR}/logs/format_var_ids.log"
+    script: "scripts/format_var_ids.R"
+
 FAM_FILE=f"{OUTDIR}/results/formatted.fam"
 COVAR_FILE=f"{OUTDIR}/results/formatted.covar"
 rule make_pheno_fam_covar:
@@ -51,8 +60,8 @@ use rule gwas from np_gwas_module as gwas_np with:
         adjusted=f"{GWAS_OUT_PFX}.assoc.linear.adjusted",
     log: f"{GWAS_OUT_PFX}.log" 
     params:
-        gwas_output_pfx=GWAS_OUT_PFX
-        
+        gwas_output_pfx=GWAS_OUT_PFX,
+        additional_args=f"--exclude {VAR_EXCL}"
 
 FREQ_PFX=f"{OUTDIR}/temp/gwas"
 rule plink_freq:
