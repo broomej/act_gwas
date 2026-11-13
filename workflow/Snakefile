@@ -1,6 +1,5 @@
 module np_gwas_module:
-    #snakefile: github("broomej/np-gwas-module", path="Snakefile", tag="v1.0.0")
-    snakefile: "/home/jb/analysis/np-gwas-module/Snakefile"
+    snakefile: github("broomej/np-gwas-module", path="Snakefile", tag=config["versions"]["modules"])
     config: config
 
 OUTDIR = config["act"]["outdir"]["gwas"]
