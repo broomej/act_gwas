@@ -54,6 +54,7 @@ use rule gwas from np_gwas_module as gwas_np with:
         bim=f"{PLINK_PFX}.bim",
         fam=FAM_FILE,
         covar=COVAR_FILE,
+        var_excl=VAR_EXCL
     output:
         assoc_linear=f"{GWAS_OUT_PFX}.assoc.linear",
         adjusted=f"{GWAS_OUT_PFX}.assoc.linear.adjusted",
